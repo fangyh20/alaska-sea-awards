@@ -1,0 +1,4 @@
+email_config.py
+last_results.json
+__pycache__/
+*.pyc

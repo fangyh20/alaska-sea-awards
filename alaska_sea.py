@@ -1,8 +1,13 @@
 # Bilt transfer partners: Asia <-> Seattle (SEA), business class, <= 100k miles
 # Usage: python alaska_sea.py
-import subprocess, json
+import subprocess, json, os, smtplib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email_config import EMAIL_FROM, EMAIL_TO, EMAIL_PASSWORD
+
+CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "last_results.json")
 
 ORIGINS = [
     "NRT",        # Japan Tokyo（数据最多）
@@ -142,3 +147,113 @@ print_section("SEA->", outbound, booking_links)
 print()
 print("=== Asia -> SEA ===")
 print_section("->SEA", inbound, booking_links)
+
+# ── 邮件通知 ────────────────────────────────────────────────────────────────
+
+def load_last_results():
+    """返回上次缓存的 (orig, dest, date) 集合；首次运行返回 None（不发邮件）。"""
+    if not os.path.exists(CACHE_FILE):
+        return None
+    try:
+        with open(CACHE_FILE, encoding="utf-8") as f:
+            return {tuple(x) for x in json.load(f)}
+    except Exception:
+        return None
+
+def save_results(results):
+    """把本次所有过滤结果的 (orig, dest, date) 写入缓存。"""
+    keys = [
+        [r.get('Route', {}).get('OriginAirport', ''),
+         r.get('Route', {}).get('DestinationAirport', ''),
+         r.get('Date', '')]
+        for r in results
+    ]
+    with open(CACHE_FILE, 'w', encoding="utf-8") as f:
+        json.dump(keys, f)
+
+def send_email(new_flights, booking_links):
+    """发送 HTML 邮件，列出所有新出现的航班。"""
+    if not new_flights:
+        return
+    rows = ""
+    for r in new_flights:
+        route  = r.get('Route', {})
+        orig   = route.get('OriginAirport', '?')
+        dest   = route.get('DestinationAirport', '?')
+        direct = "✅ 直飞" if r.get('JDirect') else "🔁 中转"
+        seats  = r.get('JRemainingSeats') or 0
+        miles  = r.get('JMileageCost', '?')
+        airlines = r.get('JAirlines', '')
+        link   = booking_links.get(r.get('ID', ''), '#')
+        try:
+            dow = datetime.strptime(r['Date'], '%Y-%m-%d').strftime('%a')
+        except Exception:
+            dow = ''
+        rows += f"""
+        <tr>
+          <td style="padding:6px 10px">{r['Date']} {dow}</td>
+          <td style="padding:6px 10px">{orig} → {dest}</td>
+          <td style="padding:6px 10px;text-align:right">{miles}</td>
+          <td style="padding:6px 10px">{direct}</td>
+          <td style="padding:6px 10px;text-align:center">{seats}</td>
+          <td style="padding:6px 10px">{airlines}</td>
+          <td style="padding:6px 10px"><a href="{link}" style="color:#0066cc;font-weight:bold">立即预订</a></td>
+        </tr>"""
+
+    n = len(new_flights)
+    if n == 1:
+        r0    = new_flights[0]
+        orig0 = r0.get('Route', {}).get('OriginAirport', '')
+        dest0 = r0.get('Route', {}).get('DestinationAirport', '')
+        subject = f"[Alaska Awards] {orig0}→{dest0}  {r0.get('JMileageCost')}里  {r0['Date']}"
+    else:
+        subject = f"[Alaska Awards] {n} new business class flights found"
+
+    html = f"""
+    <html><body style="font-family:Arial,sans-serif;color:#333">
+      <h2 style="color:#003366">Alaska Mileage Plan - New Flights Alert</h2>
+      <table border="0" cellpadding="0" cellspacing="0"
+             style="border-collapse:collapse;border:1px solid #ddd;font-size:14px">
+        <tr style="background:#003366;color:#fff">
+          <th style="padding:8px 10px">日期</th>
+          <th style="padding:8px 10px">航线</th>
+          <th style="padding:8px 10px">里程</th>
+          <th style="padding:8px 10px">直飞</th>
+          <th style="padding:8px 10px">剩余座位</th>
+          <th style="padding:8px 10px">航空公司</th>
+          <th style="padding:8px 10px">预订</th>
+        </tr>
+        {rows}
+      </table>
+      <p style="color:#999;font-size:11px;margin-top:16px">由 alaska_sea.py 自动发送 · 仅在出现新航班时通知</p>
+    </body></html>"""
+
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = subject
+    msg['From']    = EMAIL_FROM
+    msg['To']      = EMAIL_TO
+    msg.attach(MIMEText(html, 'html'))
+
+    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as s:
+        s.login(EMAIL_FROM, EMAIL_PASSWORD)
+        s.sendmail(EMAIL_FROM, EMAIL_TO, msg.as_string())
+    print(f"[EMAIL SENT] {subject}")
+
+# 对比上次结果，仅通知新增航班
+all_filtered  = inbound + outbound
+last_keys     = load_last_results()
+is_first_run  = last_keys is None
+
+if not is_first_run:
+    def flight_key(r):
+        route = r.get('Route', {})
+        return (route.get('OriginAirport', ''), route.get('DestinationAirport', ''), r.get('Date', ''))
+    new_flights = [r for r in all_filtered if flight_key(r) not in last_keys]
+    if new_flights:
+        send_email(new_flights, booking_links)
+    else:
+        print("[OK] No new flights, no email sent.")
+else:
+    print("[FIRST RUN] Baseline saved. Comparison starts next run.")
+
+save_results(all_filtered)
