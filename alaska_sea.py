@@ -171,33 +171,39 @@ def save_results(results):
     with open(CACHE_FILE, 'w', encoding="utf-8") as f:
         json.dump(keys, f)
 
-def send_email(new_flights, booking_links):
-    """发送 HTML 邮件，列出所有新出现的航班。"""
+def send_email(all_flights, new_flights, booking_links):
+    """发送 HTML 邮件：显示所有当前可用航班，新出现的行背景高亮。"""
     if not new_flights:
         return
+
+    new_keys = {flight_key(r) for r in new_flights}
+
     rows = ""
-    for r in new_flights:
-        route  = r.get('Route', {})
-        orig   = route.get('OriginAirport', '?')
-        dest   = route.get('DestinationAirport', '?')
-        direct = "✅ 直飞" if r.get('JDirect') else "🔁 中转"
-        seats  = r.get('JRemainingSeats') or 0
-        miles  = r.get('JMileageCost', '?')
+    for r in all_flights:
+        route    = r.get('Route', {})
+        orig     = route.get('OriginAirport', '?')
+        dest     = route.get('DestinationAirport', '?')
+        direct   = "Direct" if r.get('JDirect') else "Stopover"
+        seats    = r.get('JRemainingSeats') or 0
+        miles    = r.get('JMileageCost', '?')
         airlines = r.get('JAirlines', '')
-        link   = booking_links.get(r.get('ID', ''), '#')
+        link     = booking_links.get(r.get('ID', ''), '#')
+        is_new   = flight_key(r) in new_keys
+        row_bg   = "background:#fffbe6;font-weight:bold" if is_new else ""
+        new_tag  = ' <span style="color:#cc6600;font-size:11px">[NEW]</span>' if is_new else ""
         try:
             dow = datetime.strptime(r['Date'], '%Y-%m-%d').strftime('%a')
         except Exception:
             dow = ''
         rows += f"""
-        <tr>
-          <td style="padding:6px 10px">{r['Date']} {dow}</td>
-          <td style="padding:6px 10px">{orig} → {dest}</td>
+        <tr style="{row_bg}">
+          <td style="padding:6px 10px">{r['Date']} {dow}{new_tag}</td>
+          <td style="padding:6px 10px">{orig} &rarr; {dest}</td>
           <td style="padding:6px 10px;text-align:right">{miles}</td>
           <td style="padding:6px 10px">{direct}</td>
           <td style="padding:6px 10px;text-align:center">{seats}</td>
           <td style="padding:6px 10px">{airlines}</td>
-          <td style="padding:6px 10px"><a href="{link}" style="color:#0066cc;font-weight:bold">立即预订</a></td>
+          <td style="padding:6px 10px"><a href="{link}" style="color:#0066cc;font-weight:bold">Book</a></td>
         </tr>"""
 
     n = len(new_flights)
@@ -205,13 +211,14 @@ def send_email(new_flights, booking_links):
         r0    = new_flights[0]
         orig0 = r0.get('Route', {}).get('OriginAirport', '')
         dest0 = r0.get('Route', {}).get('DestinationAirport', '')
-        subject = f"[Alaska Awards] {orig0}→{dest0}  {r0.get('JMileageCost')}里  {r0['Date']}"
+        subject = f"[Alaska Awards] New: {orig0}->{dest0} {r0.get('JMileageCost')}mi {r0['Date']}"
     else:
-        subject = f"[Alaska Awards] {n} new business class flights found"
+        subject = f"[Alaska Awards] {n} new flights ({len(all_flights)} total available)"
 
     html = f"""
     <html><body style="font-family:Arial,sans-serif;color:#333">
-      <h2 style="color:#003366">Alaska Mileage Plan - New Flights Alert</h2>
+      <h2 style="color:#003366">Alaska Mileage Plan - Available Flights</h2>
+      <p style="color:#666">Showing all {len(all_flights)} available flights &mdash; <span style="background:#fffbe6;font-weight:bold;padding:2px 6px">[NEW]</span> = newly appeared since last check.</p>
       <table border="0" cellpadding="0" cellspacing="0"
              style="border-collapse:collapse;border:1px solid #ddd;font-size:14px">
         <tr style="background:#003366;color:#fff">
@@ -251,7 +258,7 @@ if not is_first_run:
         return (route.get('OriginAirport', ''), route.get('DestinationAirport', ''), r.get('Date', ''))
     new_flights = [r for r in all_filtered if flight_key(r) not in last_keys]
     if new_flights:
-        send_email(new_flights, booking_links)
+        send_email(all_filtered, new_flights, booking_links)
     else:
         print("[OK] No new flights, no email sent.")
 else:
