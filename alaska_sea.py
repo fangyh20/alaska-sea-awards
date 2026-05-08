@@ -5,12 +5,12 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 
 ORIGINS = [
-    "SIN", "BKK", "SGN", "HAN", "DAD",        # Southeast Asia
-    "HND", "NRT", "KIX", "NGO", "FUK",        # Japan
-    "ICN",                                      # Korea
-    "HKG", "TPE",                               # HK / Taiwan
-    "PVG", "PEK", "CAN", "WUH", "CTU", "SZX", # China
-    "KUL", "MNL", "CGK",                       # SE Asia cont.
+    "NRT",        # Japan Tokyo（数据最多）
+    "ICN",        # Korea Seoul（数据最多）
+    "HKG",        # Hong Kong
+    "SIN",        # Singapore
+    "BKK",        # Bangkok
+    "MNL",        # Manila
 ]
 
 SOURCES = "alaska"
