@@ -183,7 +183,7 @@ def send_email(all_flights, new_flights, booking_links):
         route    = r.get('Route', {})
         orig     = route.get('OriginAirport', '?')
         dest     = route.get('DestinationAirport', '?')
-        direct   = "Direct" if r.get('JDirect') else "Stopover"
+        direct   = "✅ 直飞" if r.get('JDirect') else "🔁 中转"
         seats    = r.get('JRemainingSeats') or 0
         miles    = r.get('JMileageCost', '?')
         airlines = r.get('JAirlines', '')
