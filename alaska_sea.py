@@ -27,29 +27,16 @@ PROGRAM_NAMES = {
     "virginatlantic": "Virgin Atlantic",
 }
 
-def fetch_booking_link(avail_id):
-    """调用 trips 端点获取该 availability 的 Alaska 预订链接。"""
-    cmd = [
-        r"C:\Python312\python.exe", "-m", "seats_aero_cli.cli",
-        "trips", avail_id, "--json"
-    ]
-    try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
-        if not r.stdout.strip():
-            return None
-        data = json.loads(r.stdout)
-        links = data.get('booking_links') or []
-        for lnk in links:
-            if lnk.get('primary'):
-                return lnk.get('link')
-        return links[0].get('link') if links else None
-    except Exception:
-        return None
+def alaska_booking_url(origin, dest, date):
+    """直接从 origin/dest/date 构造 Alaska 里程兑换搜索链接，无需额外 API 调用。"""
+    return (f"https://www.alaskaair.com/search/results?"
+            f"O={origin}&D={dest}&OD={date}&A=1&C=0&L=0&RT=false&ShoppingMethod=onlineaward")
 
 
 def hyperlink(url, text):
     """ANSI OSC 8 终端超链接（Windows Terminal / iTerm2 等支持直接点击）。"""
-    return f"\033]8;;{url}\033\\{text}\033]8;;\033\\"
+    ESC = "\x1b"
+    return f"{ESC}]8;;{url}{ESC}\\{text}{ESC}]8;;{ESC}\\"
 
 
 def fetch_pair(origin, dest):
@@ -107,18 +94,14 @@ outbound = sorted(filter_results(all_outbound), key=lambda x: x.get('Date', ''))
 total_scanned = len(all_inbound) + len(all_outbound)
 print(f"\nScanned {total_scanned} total | ->SEA: {len(inbound)} found | SEA->: {len(outbound)} found\n")
 
-# 并行获取所有筛选结果的预订链接
-all_filtered = inbound + outbound
 booking_links = {}
-if all_filtered:
-    print(f"Fetching booking links for {len(all_filtered)} results...")
-    with ThreadPoolExecutor(max_workers=20) as ex:
-        futs = {ex.submit(fetch_booking_link, r['ID']): r['ID']
-                for r in all_filtered if r.get('ID')}
-        for f in as_completed(futs):
-            avid = futs[f]
-            booking_links[avid] = f.result()
-    print()
+for r in inbound + outbound:
+    route = r.get('Route', {})
+    orig = route.get('OriginAirport', '')
+    dest = route.get('DestinationAirport', '')
+    date = r.get('Date', '')
+    if orig and dest and date:
+        booking_links[r['ID']] = alaska_booking_url(orig, dest, date)
 
 now = datetime.now(timezone.utc)
 
