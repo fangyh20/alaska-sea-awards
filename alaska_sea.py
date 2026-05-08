@@ -1,6 +1,6 @@
 # Bilt transfer partners: Asia <-> Seattle (SEA), business class, <= 100k miles
 # Usage: python alaska_sea.py
-import subprocess, json, os, smtplib
+import subprocess, json, os, smtplib, sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from email.mime.multipart import MIMEMultipart
@@ -48,7 +48,7 @@ def fetch_pair(origin, dest):
     all_results, cursor, skip = [], None, 0
     for _ in range(10):
         cmd = [
-            r"C:\Python312\python.exe", "-m", "seats_aero_cli.cli",
+            sys.executable, "-m", "seats_aero_cli.cli",
             "search",
             "--origin-airport", origin,
             "--destination-airport", dest,
