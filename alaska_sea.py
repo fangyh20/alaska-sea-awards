@@ -229,14 +229,15 @@ def send_email(new_flights, booking_links):
     </body></html>"""
 
     msg = MIMEMultipart('alternative')
+    recipients = EMAIL_TO if isinstance(EMAIL_TO, list) else [EMAIL_TO]
     msg['Subject'] = subject
     msg['From']    = EMAIL_FROM
-    msg['To']      = EMAIL_TO
+    msg['To']      = ", ".join(recipients)
     msg.attach(MIMEText(html, 'html'))
 
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as s:
         s.login(EMAIL_FROM, EMAIL_PASSWORD)
-        s.sendmail(EMAIL_FROM, EMAIL_TO, msg.as_string())
+        s.sendmail(EMAIL_FROM, recipients, msg.as_string())
     print(f"[EMAIL SENT] {subject}")
 
 # 对比上次结果，仅通知新增航班
