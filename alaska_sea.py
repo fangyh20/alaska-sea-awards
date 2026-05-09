@@ -11,7 +11,7 @@ CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "last_resu
 STATS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "route_stats.json")
 
 # Learning thresholds
-MIN_RUNS_BEFORE_LEARNING = 10   # wait for enough data before skipping
+MIN_RUNS_BEFORE_LEARNING = 80   # wait for enough data before skipping
 MIN_HIT_RATE = 0.05             # routes with <5% hit rate are "low priority"
 PROBE_INTERVAL = 5              # probe a low-priority route every N skips
 
