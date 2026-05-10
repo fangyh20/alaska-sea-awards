@@ -9,6 +9,12 @@ from email_config import EMAIL_FROM, EMAIL_PASSWORD
 
 CACHE_FILE      = os.path.join(os.path.dirname(os.path.abspath(__file__)), "last_results.json")
 FULL_CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "last_full_results.json")
+STATS_FILE      = os.path.join(os.path.dirname(os.path.abspath(__file__)), "route_stats.json")
+
+# Learning thresholds
+MIN_RUNS_BEFORE_LEARNING = 200  # wait for enough data before skipping
+MIN_HIT_RATE = 0.05             # routes with <5% hit rate are "low priority"
+PROBE_INTERVAL = 5              # probe a low-priority route every N skips
 
 ORIGINS = [
     "NRT",        # Japan Tokyo（数据最多）
@@ -32,6 +38,52 @@ PROGRAM_NAMES = {
     "american":       "American",
     "virginatlantic": "Virgin Atlantic",
 }
+
+def load_stats():
+    if not os.path.exists(STATS_FILE):
+        return {}
+    try:
+        with open(STATS_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+def save_stats(stats):
+    with open(STATS_FILE, 'w', encoding="utf-8") as f:
+        json.dump(stats, f, indent=2, ensure_ascii=False)
+
+def should_skip_route(route_key, stats):
+    s = stats.get(route_key, {})
+    runs = s.get("runs", 0)
+    hits = s.get("hits", 0)
+    skips = s.get("skips", 0)
+    if runs < MIN_RUNS_BEFORE_LEARNING:
+        return False
+    if hits / runs >= MIN_HIT_RATE:
+        return False
+    # Low hit rate: skip unless due for a probe
+    return skips < PROBE_INTERVAL - 1
+
+def update_route_stats(route_key, stats, result_count, was_skipped):
+    s = stats.setdefault(route_key, {"runs": 0, "hits": 0, "skips": 0})
+    if was_skipped:
+        s["skips"] = s.get("skips", 0) + 1
+    else:
+        s["runs"] += 1
+        s["skips"] = 0
+        if result_count > 0:
+            s["hits"] += 1
+
+def print_stats_summary(stats):
+    if not stats:
+        return
+    skipped_routes = [
+        k for k, v in stats.items()
+        if v.get("runs", 0) >= MIN_RUNS_BEFORE_LEARNING
+        and v["hits"] / v["runs"] < MIN_HIT_RATE
+    ]
+    if skipped_routes:
+        print(f"[LEARNING] Low-priority routes (hit rate <{int(MIN_HIT_RATE*100)}%): {', '.join(skipped_routes)}")
 
 def alaska_booking_url(origin, dest, date):
     """直接从 origin/dest/date 构造 Alaska 里程兑换搜索链接，无需额外 API 调用。"""
@@ -72,6 +124,54 @@ def fetch_pair(origin, dest):
     print(f"  {origin}->{dest}  {direction}  ({len(all_results)} records)")
     return all_results, dest == "SEA"
 
+
+all_pairs = [(o, "SEA") for o in ORIGINS] + [("SEA", o) for o in ORIGINS]
+
+route_stats = load_stats()
+print_stats_summary(route_stats)
+
+active_pairs, skipped_pairs = [], []
+for o, d in all_pairs:
+    key = f"{o}->{d}"
+    if should_skip_route(key, route_stats):
+        skipped_pairs.append((o, d))
+    else:
+        active_pairs.append((o, d))
+
+if skipped_pairs:
+    skipped_keys = [f"{o}->{d}" for o, d in skipped_pairs]
+    print(f"[LEARNING] Skipping {len(skipped_pairs)} low-priority route(s): {', '.join(skipped_keys)}")
+
+print(f"Searching {len(active_pairs)}/{len(all_pairs)} route pairs, business class...")
+print(f"(running in parallel)\n")
+
+all_inbound, all_outbound = [], []
+route_results = {}
+with ThreadPoolExecutor(max_workers=max(len(active_pairs), 1)) as ex:
+    futures = {ex.submit(fetch_pair, o, d): (o, d) for o, d in active_pairs}
+    for f in as_completed(futures):
+        o, d = futures[f]
+        results, is_inbound = f.result()
+        route_results[f"{o}->{d}"] = len(results)
+        if is_inbound:
+            all_inbound.extend(results)
+        else:
+            all_outbound.extend(results)
+
+for o, d in active_pairs:
+    key = f"{o}->{d}"
+    # count filtered results per route
+    count = sum(
+        1 for r in (all_inbound if d == "SEA" else all_outbound)
+        if r.get('Route', {}).get('OriginAirport') == o
+        and r.get('Route', {}).get('DestinationAirport') == d
+    )
+    update_route_stats(key, route_stats, count, was_skipped=False)
+
+for o, d in skipped_pairs:
+    update_route_stats(f"{o}->{d}", route_stats, 0, was_skipped=True)
+
+save_stats(route_stats)
 
 def filter_results(results):
     return [
