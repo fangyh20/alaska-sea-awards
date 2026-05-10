@@ -178,6 +178,7 @@ def filter_results(results):
         r for r in results
         if r.get('JAvailable')
         and int(r.get('JMileageCost') or 999999) <= 100000
+        and 'AY' not in (r.get('JAirlines') or '')
     ]
 
 
