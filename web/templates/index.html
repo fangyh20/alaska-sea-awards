@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Alaska Award Alerts · 阿拉斯加里程提醒</title>
+  <meta name="description" content="Free email alerts for Alaska Mileage Plan business class award seats between Asia and Seattle. Checked every 20 minutes.">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <style>
+    body { background: #f0f4f9; font-family: system-ui, -apple-system, sans-serif; font-size: 16px; }
+
+    .hero {
+      background: linear-gradient(135deg, #002855 0%, #004aad 100%);
+      color: #fff; padding: 48px 20px 36px; text-align: center; position: relative;
+    }
+    .hero h1 { font-size: 1.9rem; font-weight: 700; margin-bottom: 8px; }
+    .hero .sub { color: #b8d4f5; font-size: 1rem; margin-bottom: 0; line-height: 1.6; }
+
+    .lang-toggle {
+      position: absolute; top: 14px; right: 14px;
+      display: flex; border-radius: 20px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.35);
+    }
+    .lang-btn {
+      background: transparent; border: none; color: rgba(255,255,255,0.65);
+      font-size: 0.82rem; font-weight: 600; padding: 6px 14px; cursor: pointer;
+      min-height: 36px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .lang-btn.active { background: rgba(255,255,255,0.22); color: #fff; }
+    .lang-btn:hover:not(.active) { color: #fff; }
+
+    .main-card {
+      background: #fff; border-radius: 16px;
+      box-shadow: 0 6px 24px rgba(0,50,120,0.10);
+      padding: 24px;
+    }
+
+    .btn-subscribe {
+      background: #003f88; border: none; color: #fff; font-weight: 600;
+      white-space: nowrap; font-size: 1rem; min-height: 48px;
+    }
+    .btn-subscribe:hover { background: #002855; color: #fff; }
+
+    .form-control { font-size: 1rem; min-height: 48px; }
+
+    .badge-route {
+      background: #e8f0fb; color: #003066; font-weight: 600;
+      border-radius: 6px; padding: 5px 10px; font-size: 0.88rem; display: inline-block;
+    }
+
+    .feature-list { font-size: 0.95rem; color: #5a6a7e; padding-left: 0; list-style: none; margin: 0; }
+    .feature-list li { padding: 3px 0; }
+    .feature-list li::before { content: "✓ "; color: #3a7bd5; font-weight: 700; }
+
+    .divider { border: none; border-top: 1px solid #eef2f8; margin: 20px 0; }
+
+    .donate-row { background: #fffbf0; border-radius: 10px; padding: 16px; border: 1px solid #f5e19a; }
+    .donate-row p { font-size: 0.95rem; }
+    .btn-kofi {
+      background: #FF5E5B; border: none; color: #fff; font-weight: 600;
+      font-size: 1rem; min-height: 48px;
+    }
+    .btn-kofi:hover { background: #e04a47; color: #fff; }
+    .btn-stripe {
+      border: 1.5px solid #bbb; color: #555; background: transparent;
+      font-weight: 500; font-size: 1rem; min-height: 48px;
+    }
+    .btn-stripe:hover { background: #eee; color: #333; }
+
+    footer { color: #aab; font-size: 0.8rem; text-align: center; padding: 20px 0 16px; line-height: 1.8; }
+    footer a { color: #aab; text-decoration: underline dotted; }
+
+    /* ── Mobile ── */
+    @media (max-width: 576px) {
+      .hero { padding: 52px 16px 28px; }
+      .hero h1 { font-size: 1.6rem; }
+      .hero .sub { font-size: 0.95rem; }
+
+      .main-card { padding: 18px 16px; border-radius: 12px; }
+
+      /* Stack email + button vertically on small screens */
+      .input-group { flex-direction: column; gap: 10px; }
+      .input-group .form-control { border-radius: 8px !important; }
+      .input-group .btn-subscribe { border-radius: 8px !important; width: 100%; }
+
+      /* Full-width donate buttons */
+      .donate-row .d-flex { flex-direction: column; }
+      .btn-kofi, .btn-stripe { width: 100%; }
+
+      .feature-list { font-size: 0.93rem; }
+      .badge-route { font-size: 0.85rem; }
+
+      /* Request box inputs bigger on mobile */
+      .form-select, .form-control-sm, textarea { font-size: 0.95rem !important; min-height: 44px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <!-- Language toggle -->
+  <div class="lang-toggle">
+    <button class="lang-btn active" onclick="setLang('en')">EN</button>
+    <button class="lang-btn" onclick="setLang('zh')">中文</button>
+  </div>
+
+  <h1>✈️ Alaska Award Alerts</h1>
+  <p class="sub" data-en="Free alerts for business class award seats — Asia ↔ Seattle<br>Checked every 20 min. No spam. Unsubscribe anytime."
+                 data-zh="亚洲 ↔ 西雅图 商务舱里程票免费提醒<br>每20分钟检查一次 · 不发垃圾邮件 · 随时退订">
+    Free alerts for business class award seats — Asia ↔ Seattle<br>Checked every 20 min. No spam. Unsubscribe anytime.
+  </p>
+</div>
+
+<div class="container py-4" style="max-width: 520px">
+  <div class="main-card">
+
+    <!-- Signup label -->
+    <p class="mb-2 fw-semibold" style="font-size:0.95rem"
+       data-en="Get notified when seats open 👀"
+       data-zh="有新座位时立即通知你 👀">
+      Get notified when seats open 👀
+    </p>
+
+    {% if message %}
+      {% set alert_type = 'success' if message[0] == 'success' else ('info' if message[0] == 'info' else 'danger') %}
+      <div class="alert alert-{{ alert_type }} py-2 mb-2" role="alert">{{ message[1] }}</div>
+    {% endif %}
+
+    <form method="POST" novalidate class="mb-3">
+      <input type="hidden" name="lang" id="langField" value="en">
+      <div class="input-group">
+        <input type="email" name="email" class="form-control"
+               data-en-placeholder="your@email.com"
+               data-zh-placeholder="你的邮箱地址"
+               placeholder="your@email.com" required>
+        <button class="btn btn-subscribe" type="submit"
+                data-en="Subscribe →" data-zh="订阅 →">
+          Subscribe →
+        </button>
+      </div>
+    </form>
+
+    <!-- Routes -->
+    <div class="d-flex flex-wrap gap-1 mb-3 align-items-center">
+      <span class="badge-route">NRT</span>
+      <span class="badge-route">ICN</span>
+      <span class="badge-route">HKG</span>
+      <span class="badge-route">SIN</span>
+      <span class="badge-route">BKK</span>
+      <span class="badge-route">MNL</span>
+      <span class="text-muted px-1" style="font-size:0.85rem">↔</span>
+      <span class="badge-route">SEA</span>
+    </div>
+
+    <!-- Features -->
+    <ul class="feature-list mb-3">
+      <li data-en="Business class (J cabin) · Alaska Mileage Plan · ≤ 100k miles"
+          data-zh="商务舱 (J舱) · 阿拉斯加里程计划 · ≤ 10万里程">
+        Business class (J cabin) · Alaska Mileage Plan · ≤ 100k miles
+      </li>
+      <li data-en="Alerts only when <strong>new</strong> space appears — no noise"
+          data-zh="仅当出现<strong>新</strong>座位时发送提醒，不骚扰">
+        Alerts only when <strong>new</strong> space appears — no noise
+      </li>
+      <li data-en="Your email is never shared"
+          data-zh="邮箱地址绝不泄露给第三方">
+        Your email is never shared
+      </li>
+    </ul>
+
+    <hr class="divider">
+
+    <!-- Feature Request (collapsible) -->
+    <div class="mb-3">
+      <button class="btn btn-link p-0 text-decoration-none" style="font-size:0.85rem; color:#5a7ab5"
+              type="button" data-bs-toggle="collapse" data-bs-target="#requestBox"
+              data-en="💬 Request a new airport or feature" data-zh="💬 申请新机场或新功能">
+        💬 Request a new airport or feature
+      </button>
+      <div class="collapse mt-2" id="requestBox">
+        <div style="background:#f6f9ff; border-radius:10px; padding:14px; border:1px solid #d8e4f5">
+          <select class="form-select form-select-sm mb-2" id="reqType" style="font-size:0.85rem">
+            <option value="" data-en="— What kind of request? —" data-zh="— 请选择类型 —">— What kind of request? —</option>
+            <option value="New airport" data-en="New airport" data-zh="新增机场">New airport</option>
+            <option value="New route"   data-en="New route"   data-zh="新增路线">New route</option>
+            <option value="New feature" data-en="New feature" data-zh="新增功能">New feature</option>
+            <option value="Other"       data-en="Other"       data-zh="其他">Other</option>
+          </select>
+          <textarea class="form-control form-control-sm mb-2" id="reqMessage" rows="2"
+                    data-en-placeholder="Tell me more… e.g. PVG (Shanghai) → SEA"
+                    data-zh-placeholder="详细说明一下… 例如：PVG (上海) → SEA"
+                    placeholder="Tell me more… e.g. PVG (Shanghai) → SEA"
+                    style="font-size:0.85rem; resize:none"></textarea>
+          <input type="email" class="form-control form-control-sm mb-2" id="reqEmail"
+                 data-en-placeholder="Your email (optional — if you want a reply)"
+                 data-zh-placeholder="你的邮箱（选填，方便回复你）"
+                 placeholder="Your email (optional — if you want a reply)"
+                 style="font-size:0.85rem">
+          <button class="btn btn-sm btn-primary" style="font-size:0.83rem; background:#3a7bd5; border:none"
+                  onclick="submitRequest(this)"
+                  data-en="Send request" data-zh="发送请求">
+            Send request
+          </button>
+          <span id="reqStatus" class="ms-2" style="font-size:0.82rem; color:#3a7bd5"></span>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- Donate -->
+    <div class="donate-row">
+      <p class="mb-2" style="font-size:0.87rem; color:#6b5a00"
+         data-en="☕ This runs 24/7 on a personal server. If it helps you snag a flat-bed seat, a small tip keeps the lights on!"
+         data-zh="☕ 这个工具在我自己的服务器上 7×24 小时运行。如果它帮你抢到了商务舱平躺座，请我喝杯咖啡吧！">
+        ☕ This runs 24/7 on a personal server. If it helps you snag a flat-bed seat, a small tip keeps the lights on!
+      </p>
+      <div class="d-flex gap-2 flex-wrap">
+        <a href="https://ko-fi.com/rorocofi" class="btn btn-kofi px-3" target="_blank" rel="noopener"
+           data-en="Buy me a coffee" data-zh="请我喝杯咖啡 ☕">
+          Buy me a coffee
+        </a>
+        <a href="https://buy.stripe.com/5kQ28qas7f7Q9xOc35co000" class="btn btn-stripe px-3" target="_blank" rel="noopener"
+           data-en="Credit card" data-zh="信用卡支付">
+          Credit card
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  <span data-en="Personal project — not affiliated with Alaska Airlines or seats.aero."
+        data-zh="个人项目，与阿拉斯加航空及 seats.aero 无官方关联。">
+    Personal project — not affiliated with Alaska Airlines or seats.aero.
+  </span><br>
+  <span data-en="Availability data via" data-zh="座位数据来源：">Availability data via</span>
+  <a href="https://seats.aero" target="_blank" rel="noopener">seats.aero</a>
+  <span data-en="API." data-zh="API。">API.</span>
+</footer>
+
+<script>
+  function setLang(lang) {
+    document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelector(`.lang-btn[onclick="setLang('${lang}')"]`).classList.add('active');
+
+    document.querySelectorAll('[data-en]').forEach(el => {
+      el.innerHTML = el.dataset[lang] || el.dataset.en;
+    });
+
+    document.querySelectorAll('[data-en-placeholder]').forEach(el => {
+      el.placeholder = lang === 'zh' ? el.dataset.zhPlaceholder : el.dataset.enPlaceholder;
+    });
+
+    // Update <select> <option> text
+    document.querySelectorAll('option[data-en]').forEach(el => {
+      el.textContent = el.dataset[lang] || el.dataset.en;
+    });
+
+    document.documentElement.lang = lang === 'zh' ? 'zh-Hans' : 'en';
+    localStorage.setItem('lang', lang);
+    window._lang = lang;
+    const lf = document.getElementById('langField');
+    if (lf) lf.value = lang;
+  }
+
+  function submitRequest(btn) {
+    const type    = document.getElementById('reqType').value;
+    const message = document.getElementById('reqMessage').value.trim();
+    const email   = document.getElementById('reqEmail').value.trim();
+    const status  = document.getElementById('reqStatus');
+    const lang    = window._lang || 'en';
+
+    if (!message) {
+      status.style.color = '#c0392b';
+      status.textContent = lang === 'zh' ? '请填写内容' : 'Please describe your request.';
+      return;
+    }
+
+    btn.disabled = true;
+    const form = new FormData();
+    form.append('req_type', type || 'General');
+    form.append('message',  message);
+    form.append('email',    email);
+
+    fetch('/request', { method: 'POST', body: form })
+      .then(r => r.json())
+      .then(() => {
+        status.style.color = '#27ae60';
+        status.textContent = lang === 'zh' ? '已发送，谢谢！' : 'Sent — thanks!';
+        document.getElementById('reqMessage').value = '';
+        document.getElementById('reqEmail').value = '';
+      })
+      .catch(() => {
+        status.style.color = '#c0392b';
+        status.textContent = lang === 'zh' ? '发送失败，请稍后再试' : 'Failed to send, please try again.';
+        btn.disabled = false;
+      });
+  }
+
+  // Auto-detect on load
+  (function () {
+    const saved = localStorage.getItem('lang');
+    const browser = navigator.language || '';
+    if (saved) {
+      setLang(saved);
+    } else if (browser.startsWith('zh')) {
+      setLang('zh');
+    }
+  })();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

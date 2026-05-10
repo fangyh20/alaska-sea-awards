@@ -1,4 +1,7 @@
 email_config.py
 last_results.json
+last_full_results.json
+subscribers.db
+alaska_sea.log
 __pycache__/
 *.pyc
