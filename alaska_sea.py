@@ -178,6 +178,7 @@ def filter_results(results):
         r for r in results
         if r.get('JAvailable')
         and int(r.get('JMileageCost') or 999999) <= 100000
+        and int(r.get('JTotalTaxes') or 0) < 40000  # exclude taxes >= $400 (stored in cents)
     ]
 
 
